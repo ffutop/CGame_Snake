@@ -13,10 +13,14 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        snake.cpp \
-    block.cpp
+    block.cpp \
+    snake.cpp \
+    gameController.cpp
 
-HEADERS  += snake.h \
-    block.h
+HEADERS  += \
+    block.h \
+    snake.h \
+    gameController.h
 
-FORMS    += snake.ui
+FORMS    += \
+    gameController.ui

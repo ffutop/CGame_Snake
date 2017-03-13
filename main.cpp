@@ -1,10 +1,10 @@
-#include "snake.h"
+#include "gameController.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    Snake w;
+    GameController w;
     w.show();
 
     return a.exec();

@@ -1,31 +1,27 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
-#include <QMainWindow>
-#include "block.h"
+#include<list>
 
-const int MAX_WIDTH = 20;  //游戏界面最大宽度
-const int MAX_HEIGHT = 20; //游戏界面最大高度
-const int BLOCK_SIZE = 35;
+class Block;
 
-namespace Ui {
-class Snake;
-}
+enum DIR {
+    UP,     //向上
+    DOWN,   //向下
+    LEFT,   //向左
+    RIGHT   //向右
+};
 
-class Snake : public QMainWindow
+class Snake
 {
-    Q_OBJECT
-
 public:
-    explicit Snake(QWidget *parent = 0);
+    Snake();
     ~Snake();
-    void initMap();  //初始化地图
+    int length;         //蛇身长度
+    int headX, headY;   //蛇头坐标
+    int headDir;        //蛇头方向
 
-private:
-    Ui::Snake *ui;
-    Block *block[MAX_WIDTH][MAX_HEIGHT];    //游戏界面 二维地图块
-    int width = MAX_WIDTH, height=MAX_HEIGHT;  //地图块 宽度与高度
-
+    std::list<Block*> snake; //蛇身的每一节（按序记录）
 };
 
 #endif // SNAKE_H
