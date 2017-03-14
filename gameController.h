@@ -35,6 +35,7 @@ public:
 protected:
     void keyPressEvent(QKeyEvent *e);
     void timerEvent(QTimerEvent *e);
+    void mousePressEvent(QMouseEvent *e);
 
 private:
     Ui::GameController *ui;
@@ -42,6 +43,7 @@ private:
     int width = MAX_WIDTH, height=MAX_HEIGHT;  //地图块 宽度与高度
     Snake *snake;   //蛇对象的引用
     int moveTimer;
+    bool isStart;   //状态量 是否在游戏中
 };
 
 #endif // GAMECONTROLLER_H

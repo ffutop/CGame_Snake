@@ -12,13 +12,22 @@ GameController::GameController(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    moveTimer = startTimer(500);       //初始化计时器 1000 ms/次 触发定时器
+    moveTimer = startTimer(200);       //初始化计时器 1000 ms/次 触发定时器
     qsrand(QTime(0, 0, 0).secsTo(QTime::currentTime()));
 
+    isStart = true;
+
     resize(BLOCK_SIZE*width, BLOCK_SIZE*height);    //重定义界面大小
+
+    for(int row=0;row<height;row++)
+        for(int col=0;col<width;col++)
+        {
+            block[row][col] = new Block();          //创建 Block 对象
+            block[row][col]->block = new QLabel(this);  //创建 QLabel 对象
+        }
     initMap();  //初始化地图
-    initSnake();
-    randGenFood();
+    initSnake();//初始化蛇身
+    randGenFood();//随机生成食物
 
 }
 
@@ -40,21 +49,19 @@ void GameController::initMap()   //初始化地图块
     {
         for(int col=0;col<width;col++)
         {
-            block[row][col] = new Block();      //创建 Block 对象
-            QLabel *label = new QLabel(this);   //创建 QLabel 对象
-
             //重置 QLabel 的样式及位置
-            label->setStyleSheet("QLabel{ background-color: black;}");
-            label->setGeometry(col*BLOCK_SIZE, row*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-//            label->setNum(row*width+col); //TO TEST
-
-            block[row][col]->block = label;     // Block 对象记录 QLabel 的地址，用于后续访问
+            block[row][col]->type = BlockType::NORMAL_TYPE;
+            block[row][col]->block->setStyleSheet("QLabel{ background-color: black;}");
+            block[row][col]->block->setGeometry(col*BLOCK_SIZE, row*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+//            label->setNum(row*width+col); //TO TEST  
         }
     }
 }
 
 void GameController::initSnake()
 {
+    if(snake != nullptr)    //清除上一轮游戏中的对象（蛇），防止内存溢出
+        delete snake;
     snake = new Snake();
     snake->length = 1;
     snake->headX = qrand() % MAX_WIDTH;
@@ -75,7 +82,7 @@ void GameController::randGenFood()
         y = qrand() % MAX_HEIGHT;
     }
     block[x][y]->type = BlockType::FOOD_TYPE;
-    block[x][y]->block->setStyleSheet("QLabel{ background: white;}");
+    block[x][y]->block->setStyleSheet("QLabel{ background: red;  border-radius: 30px;}");
 }
 
 void GameController::snakeMove(int x, int y)
@@ -147,7 +154,8 @@ void GameController::turnRight()
 
 void GameController::showErrorMessage()
 {
-    QMessageBox::warning(this, tr("游戏结束"), tr("You lose!"));
+    isStart = false;
+    QMessageBox::warning(this, tr("Warning"), tr("Game is Over. You lose!"), QMessageBox::Yes);
 }
 
 void GameController::keyPressEvent(QKeyEvent *e)
@@ -182,7 +190,7 @@ void GameController::keyPressEvent(QKeyEvent *e)
 
 void GameController::timerEvent(QTimerEvent *e)
 {
-    if(e->timerId() == moveTimer)   //定时器触发
+    if(isStart && e->timerId() == moveTimer)   //定时器触发
     {
         switch (snake->headDir) {   //判断当前蛇首方向
         case DIR::UP:
@@ -192,7 +200,7 @@ void GameController::timerEvent(QTimerEvent *e)
                 snakeMove(snake->headX-1, snake->headY);
             break;
         case DIR::DOWN:
-            if(snake->headX == height)
+            if(snake->headX == height-1)
                 showErrorMessage();
             else
                 snakeMove(snake->headX+1, snake->headY);
@@ -204,7 +212,7 @@ void GameController::timerEvent(QTimerEvent *e)
                 snakeMove(snake->headX, snake->headY-1);
             break;
         case DIR::RIGHT:
-            if(snake->headY == width)
+            if(snake->headY == width-1)
                 showErrorMessage();
             else
                 snakeMove(snake->headX, snake->headY+1);
@@ -212,5 +220,17 @@ void GameController::timerEvent(QTimerEvent *e)
         default:
             break;
         }
+    }
+}
+
+void GameController::mousePressEvent(QMouseEvent *)
+{
+    //响应鼠标点击事件
+    if(isStart == false)    //如果游戏尚未开始
+    {
+        isStart = true; //设置游戏状态为 游戏中...
+        initMap();      //重置地图
+        initSnake();    //重置蛇
+        randGenFood();  //重置食物
     }
 }
