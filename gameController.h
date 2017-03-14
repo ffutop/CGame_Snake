@@ -24,15 +24,17 @@ public:
     void initSnake();   //初始化蛇
     void randGenFood(); //随机产生食物块
 
-    void snakeMove();
+    void snakeMove(int x, int y);
     void turnUp();
     void turnDown();
     void turnLeft();
     void turnRight();
 
+    void showErrorMessage();
+
 protected:
-    void keyPressEvent(QKeyEvent *);
-    void timerEvent(QTimerEvent *);
+    void keyPressEvent(QKeyEvent *e);
+    void timerEvent(QTimerEvent *e);
 
 private:
     Ui::GameController *ui;

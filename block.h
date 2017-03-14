@@ -7,7 +7,6 @@ class QLabel;
 
 enum BlockType{     //标签块类型
     NORMAL_TYPE,    //普通标签块
-    BORDER_TYPE,    //边界标签块
     SNAKE_TYPE,     //蛇身标签块
     FOOD_TYPE       //食物标签块
 };

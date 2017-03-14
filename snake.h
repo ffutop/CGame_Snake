@@ -3,8 +3,6 @@
 
 #include<list>
 
-class Block;
-
 enum DIR {
     UP,     //向上
     DOWN,   //向下
@@ -21,7 +19,7 @@ public:
     int headX, headY;   //蛇头坐标
     int headDir;        //蛇头方向
 
-    std::list<Block*> snake; //蛇身的每一节（按序记录）
+    std::list<std::pair<int, int> > snake; //蛇身的每一节（按序记录）
 };
 
 #endif // SNAKE_H
