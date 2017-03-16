@@ -67,7 +67,10 @@ void GameController::initSnake()
     snake->headX = qrand() % MAX_WIDTH;
     snake->headY = qrand() % MAX_HEIGHT;
     block[snake->headX][snake->headY]->type = BlockType::SNAKE_TYPE;
-    block[snake->headX][snake->headY]->block->setStyleSheet("QLabel { background: white }");
+//    if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
+        block[snake->headX][snake->headY]->block->setStyleSheet("background-color: white; border: 5px solid black;");
+//    else
+//        block[snake->headX][snake->headY]->block->setStyleSheet("background-color: white; border: 10px solid black");
     snake->headDir = qrand() % 4;
     snake->snake.push_front(std::make_pair(snake->headX, snake->headY));
 }
@@ -82,7 +85,7 @@ void GameController::randGenFood()
         y = qrand() % MAX_HEIGHT;
     }
     block[x][y]->type = BlockType::FOOD_TYPE;
-    block[x][y]->block->setStyleSheet("QLabel{ background: red;  border-radius: 30px;}");
+    block[x][y]->block->setStyleSheet("background: red; border: 5px solid black;");
 }
 
 void GameController::snakeMove(int x, int y)
@@ -94,12 +97,17 @@ void GameController::snakeMove(int x, int y)
         snake->headX = x;
         snake->headY = y;
         block[x][y]->type = BlockType::SNAKE_TYPE;
-        block[x][y]->block->setStyleSheet("QLabel {background: white;}");
+        if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
+            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 0 5px;");
+        else
+            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 10px 0;");
+
+//        block[x][y]->block->setStyleSheet("QLabel {background: white;}");
 
         //删除蛇尾 BLOCK
         std::pair<int, int> tail = snake->snake.back();
         snake->snake.pop_back();
-        block[tail.first][tail.second]->block->setStyleSheet("QLabel {background: black;}");
+        block[tail.first][tail.second]->block->setStyleSheet("background: black;");
         block[tail.first][tail.second]->type = BlockType::NORMAL_TYPE;
     }
     else if(block[x][y]->type == BlockType::FOOD_TYPE)
@@ -108,7 +116,12 @@ void GameController::snakeMove(int x, int y)
         snake->snake.push_front(std::make_pair(x, y));
         snake->headX = x;
         snake->headY = y;
-        block[x][y]->block->setStyleSheet("QLabel {background: white;}");
+//        block[x][y]->block->setStyleSheet("QLabel {background: white;}");
+        if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
+            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 0 10px;");
+        else
+            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 10px 0;");
+
         block[x][y]->type = BlockType::SNAKE_TYPE;
         snake->length++;
 
