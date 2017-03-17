@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>assets/New_104px.png</file>
+        <file>assets/Exit_104px.png</file>
+        <file>assets/Help_104px.png</file>
+        <file>assets/Pause_104px.png</file>
+        <file>assets/Play_104px.png</file>
+        <file>assets/Resume_Button_96px.png</file>
+    </qresource>
+</RCC>

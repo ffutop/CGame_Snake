@@ -1,5 +1,7 @@
 #include "gameController.h"
 #include "ui_gameController.h"
+#include<iostream>
+#include<string>
 #include<QLabel>
 #include<QGridLayout>
 #include<QTime>
@@ -23,7 +25,7 @@ GameController::GameController(QWidget *parent) :
         for(int col=0;col<width;col++)
         {
             block[row][col] = new Block();          //创建 Block 对象
-            block[row][col]->block = new QLabel(this);  //创建 QLabel 对象
+            block[row][col]->block = new QLabel(this->centralWidget());  //创建 QLabel 对象
         }
     initMap();  //初始化地图
     initSnake();//初始化蛇身
@@ -238,12 +240,50 @@ void GameController::timerEvent(QTimerEvent *e)
 
 void GameController::mousePressEvent(QMouseEvent *)
 {
-    //响应鼠标点击事件
-    if(isStart == false)    //如果游戏尚未开始
+//    //响应鼠标点击事件
+//    if(isStart == false)    //如果游戏尚未开始
+//    {
+//        isStart = true; //设置游戏状态为 游戏中...
+//        initMap();      //重置地图
+//        initSnake();    //重置蛇
+//        randGenFood();  //重置食物
+//    }
+}
+
+void GameController::on_actionNew_Game_N_triggered()    //新的游戏
+{
+    isStart = false;
+    initMap();  //初始化地图
+    initSnake();//初始化蛇身
+    randGenFood();//随机生成食物
+    ui->actionStart_S->setCheckable(true);
+}
+
+void GameController::on_actionStart_S_triggered()
+{
+    //TODO: 设置 Action 不可点击（禁制显示）
+    ui->actionStart_S->setCheckable(false);
+    isStart = true;
+}
+
+void GameController::on_actionExit_Q_triggered()
+{
+    exit(true);
+}
+
+void GameController::on_actionPause_Continue_triggered()
+{
+    //TODO: 添加实际 暂停/继续 操作逻辑
+    QIcon pause(":/icon/assets/Pause_104px.png");
+    QIcon contin(":/icon/assets/Resume_Button_96px.png");
+    if(ui->actionPause_Continue->text() == tr("Pause(&P)"))
     {
-        isStart = true; //设置游戏状态为 游戏中...
-        initMap();      //重置地图
-        initSnake();    //重置蛇
-        randGenFood();  //重置食物
+        ui->actionPause_Continue->setIcon(contin);
+        ui->actionPause_Continue->setText(tr("Continue(&C)"));
+    }
+    else
+    {
+        ui->actionPause_Continue->setIcon(pause);
+        ui->actionPause_Continue->setText(tr("Pause(&P)"));
     }
 }

@@ -37,6 +37,15 @@ protected:
     void timerEvent(QTimerEvent *e);
     void mousePressEvent(QMouseEvent *e);
 
+private slots:
+    void on_actionNew_Game_N_triggered();
+
+    void on_actionStart_S_triggered();
+
+    void on_actionExit_Q_triggered();
+
+    void on_actionPause_Continue_triggered();
+
 private:
     Ui::GameController *ui;
     Block *block[MAX_WIDTH][MAX_HEIGHT];    //游戏界面 二维地图块

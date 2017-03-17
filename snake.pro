@@ -24,3 +24,6 @@ HEADERS  += \
 
 FORMS    += \
     gameController.ui
+
+RESOURCES += \
+    icon.qrc
