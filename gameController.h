@@ -5,8 +5,8 @@
 #include "block.h"
 #include "snake.h"
 
-const int MAX_WIDTH = 20;   //游戏界面最大宽度
-const int MAX_HEIGHT = 20;  //游戏界面最大高度
+const int MAX_WIDTH = 18;   //游戏界面最大宽度
+const int MAX_HEIGHT = 18;  //游戏界面最大高度
 const int BLOCK_SIZE = 35;  //每个标签块的大小（像素）
 
 namespace Ui {
@@ -24,6 +24,8 @@ public:
     void initSnake();   //初始化蛇
     void randGenFood(); //随机产生食物块
 
+    QRectF genSnakeRect(std::pair<int, int> coordinate);
+
     void snakeMove(int x, int y);
     void turnUp();
     void turnDown();
@@ -36,6 +38,7 @@ protected:
     void keyPressEvent(QKeyEvent *e);
     void timerEvent(QTimerEvent *e);
     void mousePressEvent(QMouseEvent *e);
+    void paintEvent(QPaintEvent *);
 
 private slots:
     void on_actionNew_Game_N_triggered();
@@ -48,11 +51,12 @@ private slots:
 
 private:
     Ui::GameController *ui;
-    Block *block[MAX_WIDTH][MAX_HEIGHT];    //游戏界面 二维地图块
     int width = MAX_WIDTH, height=MAX_HEIGHT;  //地图块 宽度与高度
-    Snake *snake;   //蛇对象的引用
     int moveTimer;
     bool isStart;   //状态量 是否在游戏中
+    Block *block[MAX_WIDTH][MAX_HEIGHT];    //游戏界面 二维地图块
+    Snake *snake;   //蛇对象的引用
+    Block *food;    //记录食物位置
 };
 
 #endif // GAMECONTROLLER_H

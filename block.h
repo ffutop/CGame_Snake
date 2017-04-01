@@ -16,7 +16,7 @@ class Block     //标签块类
 public:
     Block();
     ~Block();
-    QLabel *block;  //使用标签在 GUI 界面显示地图
+//    QLabel *block;  //使用标签在 GUI 界面显示地图
     int type;       //标签块类型
     int x, y;       //标签块位置 (x, y)
 };

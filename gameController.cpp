@@ -7,6 +7,7 @@
 #include<QTime>
 #include<QKeyEvent>
 #include<QMessageBox>
+#include<QPainter>
 
 GameController::GameController(QWidget *parent) :
     QMainWindow(parent),
@@ -14,22 +15,26 @@ GameController::GameController(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    moveTimer = startTimer(200);       //初始化计时器 1000 ms/次 触发定时器
+    moveTimer = startTimer(400);       //初始化计时器 1000 ms/次 触发定时器
     qsrand(QTime(0, 0, 0).secsTo(QTime::currentTime()));
 
     isStart = true;
 
-    resize(BLOCK_SIZE*width, BLOCK_SIZE*height);    //重定义界面大小
+    resize(BLOCK_SIZE*width, BLOCK_SIZE*height);   //重定义界面大小
 
+    // new Block() 对象
     for(int row=0;row<height;row++)
         for(int col=0;col<width;col++)
-        {
-            block[row][col] = new Block();          //创建 Block 对象
-            block[row][col]->block = new QLabel(this->centralWidget());  //创建 QLabel 对象
-        }
+            block[row][col] = new Block();
+    // new Snake() 对象
+    snake = new Snake();
+
     initMap();  //初始化地图
     initSnake();//初始化蛇身
     randGenFood();//随机生成食物
+
+    printf("%d %d %d %d\n", DIR::UP, DIR::DOWN,
+           DIR::LEFT, DIR::RIGHT);
 
 }
 
@@ -53,8 +58,10 @@ void GameController::initMap()   //初始化地图块
         {
             //重置 QLabel 的样式及位置
             block[row][col]->type = BlockType::NORMAL_TYPE;
-            block[row][col]->block->setStyleSheet("QLabel{ background-color: black;}");
-            block[row][col]->block->setGeometry(col*BLOCK_SIZE, row*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            block[row][col]->x = row;
+            block[row][col]->y = col;
+            //block[row][col]->block->setStyleSheet("QLabel{ background-color: black;}");
+//            block[row][col]->block->setGeometry(col*BLOCK_SIZE, row*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 //            label->setNum(row*width+col); //TO TEST  
         }
     }
@@ -64,30 +71,36 @@ void GameController::initSnake()
 {
     if(snake != nullptr)    //清除上一轮游戏中的对象（蛇），防止内存溢出
         delete snake;
+    //随机产生长为 1 的蛇，蛇首坐标 (snakeHeadX, snakeHeadY), 蛇首朝向 snakeHeadDir 。
     snake = new Snake();
     snake->length = 1;
-    snake->headX = qrand() % MAX_WIDTH;
-    snake->headY = qrand() % MAX_HEIGHT;
+    snake->headX = qrand() % width;
+    snake->headY = qrand() % height;
+    snake->headDir = qrand() % 4;
     block[snake->headX][snake->headY]->type = BlockType::SNAKE_TYPE;
+    snake->snake.push_front(std::make_pair(snake->headX, snake->headY));
 //    if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
-        block[snake->headX][snake->headY]->block->setStyleSheet("background-color: white; border: 5px solid black;");
+//        block[snake->headX][snake->headY]->block->setStyleSheet("background-color: white; border: 5px solid black;");
 //    else
 //        block[snake->headX][snake->headY]->block->setStyleSheet("background-color: white; border: 10px solid black");
-    snake->headDir = qrand() % 4;
-    snake->snake.push_front(std::make_pair(snake->headX, snake->headY));
 }
 
 void GameController::randGenFood()
 {
-    int x = qrand() % MAX_WIDTH;
-    int y = qrand() % MAX_HEIGHT;
-    while(block[x][y]->type != BlockType::NORMAL_TYPE)
-    {
-        x = qrand() % MAX_WIDTH;
-        y = qrand() % MAX_HEIGHT;
-    }
+    int x, y;
+    do {
+        x = qrand() % width;
+        y = qrand() % height;
+    } while(block[x][y]->type != BlockType::NORMAL_TYPE);
     block[x][y]->type = BlockType::FOOD_TYPE;
-    block[x][y]->block->setStyleSheet("background: red; border: 5px solid black;");
+    food = block[x][y];
+    //    block[x][y]->block->setStyleSheet("background: red; border: 5px solid black;");
+}
+
+QRectF GameController::genSnakeRect(std::pair<int, int> coordinate)
+{
+    return QRectF((coordinate.second+0.25)*BLOCK_SIZE, (coordinate.first+0.25)*BLOCK_SIZE,
+                  0.5*BLOCK_SIZE, 0.5*BLOCK_SIZE);
 }
 
 void GameController::snakeMove(int x, int y)
@@ -99,17 +112,18 @@ void GameController::snakeMove(int x, int y)
         snake->headX = x;
         snake->headY = y;
         block[x][y]->type = BlockType::SNAKE_TYPE;
-        if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
-            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 0 5px;");
-        else
-            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 10px 0;");
+
+//        if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
+//            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 0 5px;");
+//        else
+//            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 10px 0;");
 
 //        block[x][y]->block->setStyleSheet("QLabel {background: white;}");
 
         //删除蛇尾 BLOCK
         std::pair<int, int> tail = snake->snake.back();
         snake->snake.pop_back();
-        block[tail.first][tail.second]->block->setStyleSheet("background: black;");
+//        block[tail.first][tail.second]->block->setStyleSheet("background: black;");
         block[tail.first][tail.second]->type = BlockType::NORMAL_TYPE;
     }
     else if(block[x][y]->type == BlockType::FOOD_TYPE)
@@ -119,10 +133,10 @@ void GameController::snakeMove(int x, int y)
         snake->headX = x;
         snake->headY = y;
 //        block[x][y]->block->setStyleSheet("QLabel {background: white;}");
-        if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
-            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 0 10px;");
-        else
-            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 10px 0;");
+//        if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
+//            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 0 10px;");
+//        else
+//            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 10px 0;");
 
         block[x][y]->type = BlockType::SNAKE_TYPE;
         snake->length++;
@@ -235,6 +249,7 @@ void GameController::timerEvent(QTimerEvent *e)
         default:
             break;
         }
+        repaint();
     }
 }
 
@@ -247,7 +262,30 @@ void GameController::mousePressEvent(QMouseEvent *)
 //        initMap();      //重置地图
 //        initSnake();    //重置蛇
 //        randGenFood();  //重置食物
-//    }
+    //    }
+}
+
+void GameController::paintEvent(QPaintEvent *)
+{
+    QPainter painter(this);
+    //绘制背景 全黑
+    painter.setPen(Qt::black);
+    painter.setBrush(Qt::black);
+    painter.drawRect(0, 0, BLOCK_SIZE*height, BLOCK_SIZE*width);
+
+    //绘制食物 红点
+    painter.setPen(Qt::red);
+    painter.setBrush(Qt::red);
+    painter.drawRect((food->y + 0.25)*BLOCK_SIZE, (food->x + 0.25)*BLOCK_SIZE,
+                     0.5*BLOCK_SIZE, 0.5*BLOCK_SIZE);
+
+    //绘制蛇 全白
+    painter.setPen(Qt::white);
+    painter.setBrush(Qt::white);
+    for(auto coordinate : snake->snake)
+    {
+        painter.drawRect(genSnakeRect(coordinate));
+    }
 }
 
 void GameController::on_actionNew_Game_N_triggered()    //新的游戏

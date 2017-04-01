@@ -3,12 +3,12 @@
 
 Block::Block()
 {
-    block = nullptr;
+//    block = nullptr;
     type = BlockType::NORMAL_TYPE;
     x = y = 0;
 }
 
 Block::~Block()
 {
-    delete block;
+//    delete block;
 }
