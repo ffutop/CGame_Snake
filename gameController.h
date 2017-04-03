@@ -8,6 +8,7 @@
 const int MAX_WIDTH = 18;   //游戏界面最大宽度
 const int MAX_HEIGHT = 18;  //游戏界面最大高度
 const int BLOCK_SIZE = 35;  //每个标签块的大小（像素）
+const int INTERVALS = 100;  //timerEvent 触发的间隔时间
 
 namespace Ui {
 class GameController;
@@ -34,6 +35,9 @@ public:
 
     void showErrorMessage();
 
+    //智能 AI ,自动路径产生
+    void AI();
+
 protected:
     void keyPressEvent(QKeyEvent *e);
     void timerEvent(QTimerEvent *e);
@@ -52,7 +56,7 @@ private slots:
 private:
     Ui::GameController *ui;
     int width = MAX_WIDTH, height=MAX_HEIGHT;  //地图块 宽度与高度
-    int moveTimer;
+    int moveTimer;  //保存计时器 ID
     bool isStart;   //状态量 是否在游戏中
     Block *block[MAX_WIDTH][MAX_HEIGHT];    //游戏界面 二维地图块
     Snake *snake;   //蛇对象的引用

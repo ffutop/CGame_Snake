@@ -8,6 +8,7 @@
 #include<QKeyEvent>
 #include<QMessageBox>
 #include<QPainter>
+#include<QDebug>
 
 GameController::GameController(QWidget *parent) :
     QMainWindow(parent),
@@ -15,7 +16,8 @@ GameController::GameController(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    moveTimer = startTimer(300);       //初始化计时器 1000 ms/次 触发定时器
+    moveTimer = startTimer(INTERVALS);       //初始化计时器 1000 ms/次 触发定时器
+
     qsrand(QTime(0, 0, 0).secsTo(QTime::currentTime()));
 
     isStart = true;
@@ -32,10 +34,6 @@ GameController::GameController(QWidget *parent) :
     initMap();  //初始化地图
     initSnake();//初始化蛇身
     randGenFood();//随机生成食物
-
-    printf("%d %d %d %d\n", DIR::UP, DIR::DOWN,
-           DIR::LEFT, DIR::RIGHT);
-
 }
 
 GameController::~GameController() //释放堆内存中的对象
@@ -217,6 +215,34 @@ void GameController::showErrorMessage()
     QMessageBox::warning(this, tr("Warning"), tr("Game is Over. You lose!"), QMessageBox::Yes);
 }
 
+void GameController::AI()
+{
+    if(snake->headY == 0)
+    {
+        snake->headDir = DIR::UP;
+//        turnUp();
+        if(snake->headX == 0)
+            snake->headDir = DIR::RIGHT;
+//            turnRight();
+    }
+    else if(snake->headX == height-1 && snake->headY == 1)
+        snake->headDir = DIR::LEFT;
+    else if(snake->headY == 1)
+    {
+        snake->headDir = snake->headX % 2 ? DIR::DOWN : DIR::RIGHT;
+//        snake->headX % 2 ? turnDown() : turnRight();
+    }
+    else if(snake->headY == width-1)
+    {
+        snake->headDir = snake->headX % 2 ? DIR::LEFT : DIR::DOWN;
+//        snake->headX % 2 ? turnLeft() : turnDown();
+    }
+    else
+    {
+        snake->headDir = snake->headX % 2 ? DIR::LEFT : DIR::RIGHT;
+    }
+}
+
 void GameController::keyPressEvent(QKeyEvent *e)
 {
     switch (e->key()) {
@@ -241,6 +267,15 @@ void GameController::keyPressEvent(QKeyEvent *e)
     case Qt::Key_D:
         turnRight();    break;
 
+    //暂停
+    case Qt::Key_P:
+        isStart = !isStart;
+        if(isStart)
+            moveTimer = startTimer(INTERVALS);
+        else
+            killTimer(moveTimer);
+       break;
+
     //非法键盘事件
     default:
         break;
@@ -251,6 +286,7 @@ void GameController::timerEvent(QTimerEvent *e)
 {
     if(isStart && e->timerId() == moveTimer)   //定时器触发
     {
+        AI();
         switch (snake->headDir) {   //判断当前蛇首方向
         case DIR::UP:
             if(snake->headX == 0)
