@@ -15,7 +15,7 @@ GameController::GameController(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    moveTimer = startTimer(400);       //初始化计时器 1000 ms/次 触发定时器
+    moveTimer = startTimer(300);       //初始化计时器 1000 ms/次 触发定时器
     qsrand(QTime(0, 0, 0).secsTo(QTime::currentTime()));
 
     isStart = true;
@@ -97,10 +97,40 @@ void GameController::randGenFood()
     //    block[x][y]->block->setStyleSheet("background: red; border: 5px solid black;");
 }
 
-QRectF GameController::genSnakeRect(std::pair<int, int> coordinate)
+QRectF GameController::genSnakeRect(std::pair<int, int> preCoordinate, std::pair<int, int> coordinate)
 {
-    return QRectF((coordinate.second+0.25)*BLOCK_SIZE, (coordinate.first+0.25)*BLOCK_SIZE,
-                  0.5*BLOCK_SIZE, 0.5*BLOCK_SIZE);
+    if(preCoordinate.first == -1)
+    {
+        return QRectF((coordinate.second+0.25)*BLOCK_SIZE, (coordinate.first+0.25)*BLOCK_SIZE,
+                      0.5*BLOCK_SIZE, 0.5*BLOCK_SIZE);
+    }
+    else
+    {
+        //preCoordinate (row, col+1)  coordinate (row, col);
+        if(preCoordinate.first == coordinate.first && preCoordinate.second == coordinate.second+1)
+        {
+            return QRectF((coordinate.second+0.25)*BLOCK_SIZE, (coordinate.first+0.25)*BLOCK_SIZE,
+                          BLOCK_SIZE, 0.5*BLOCK_SIZE);
+        }
+        //preCoordinate (row, col+1)  coordinate (row, col);
+        else if(preCoordinate.first == coordinate.first && preCoordinate.second == coordinate.second-1)
+        {
+            return QRectF((coordinate.second-0.25)*BLOCK_SIZE, (coordinate.first+0.25)*BLOCK_SIZE,
+                          BLOCK_SIZE, 0.5*BLOCK_SIZE);
+        }
+        //preCoordinate (row+1, col)  coordinate (row, col);
+        else if(preCoordinate.second == preCoordinate.second && preCoordinate.first == coordinate.first+1)
+        {
+            return QRectF((coordinate.second+0.25)*BLOCK_SIZE, (coordinate.first+0.25)*BLOCK_SIZE,
+                          0.5*BLOCK_SIZE, BLOCK_SIZE);
+        }
+        //preCoordinate (row-1, col)  coordinate (row, col);
+        else if(preCoordinate.second == preCoordinate.second && preCoordinate.first == coordinate.first-1)
+        {
+            return QRectF((coordinate.second+0.25)*BLOCK_SIZE, (coordinate.first-0.25)*BLOCK_SIZE,
+                          0.5*BLOCK_SIZE, BLOCK_SIZE);
+        }
+    }
 }
 
 void GameController::snakeMove(int x, int y)
@@ -282,9 +312,11 @@ void GameController::paintEvent(QPaintEvent *)
     //绘制蛇 全白
     painter.setPen(Qt::white);
     painter.setBrush(Qt::white);
+    std::pair<int, int> preCoordinate = std::make_pair(-1, -1);
     for(auto coordinate : snake->snake)
     {
-        painter.drawRect(genSnakeRect(coordinate));
+        painter.drawRect(genSnakeRect(preCoordinate, coordinate));
+        preCoordinate = coordinate;
     }
 }
 

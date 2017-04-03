@@ -24,7 +24,7 @@ public:
     void initSnake();   //初始化蛇
     void randGenFood(); //随机产生食物块
 
-    QRectF genSnakeRect(std::pair<int, int> coordinate);
+    QRectF genSnakeRect(std::pair<int, int> preCoordinate, std::pair<int, int> coordinate);
 
     void snakeMove(int x, int y);
     void turnUp();
