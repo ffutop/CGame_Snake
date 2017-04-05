@@ -8,7 +8,8 @@
 const int MAX_WIDTH = 18;   //游戏界面最大宽度
 const int MAX_HEIGHT = 18;  //游戏界面最大高度
 const int BLOCK_SIZE = 35;  //每个标签块的大小（像素）
-const int INTERVALS = 100;  //timerEvent 触发的间隔时间
+const int INTERVALS = 10;  //timerEvent 触发的间隔时间
+const int MAX_IDX = 10000000;   //设置最大计数值(idx)，采用循环计数的方式
 
 namespace Ui {
 class GameController;
@@ -37,6 +38,21 @@ public:
 
     //智能 AI ,自动路径产生
     void AI();
+
+    //按规则进行移动，每次覆盖全图
+    void AI_normal();
+
+    //宽搜选择下一步
+    void AI_bfs();
+
+    //获得食物后是否能够有路径抵达蛇尾（防止进入死路）
+    bool GameController::hasWayToTail(int headX, int headY, int tailX, int tailY)
+
+    //根据上一步的计数值，产生新的计数值
+    int getIdx(int oriIdx);
+    //计算两个计数值间的步数差
+    int subIdx(int oriIdx, int curIdx);
+
 
 protected:
     void keyPressEvent(QKeyEvent *e);

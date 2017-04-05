@@ -2,6 +2,7 @@
 #include "ui_gameController.h"
 #include<iostream>
 #include<string>
+#include<queue>
 #include<QLabel>
 #include<QGridLayout>
 #include<QTime>
@@ -40,12 +41,8 @@ GameController::~GameController() //释放堆内存中的对象
 {
     delete ui;
     for(int row=0;row<height;row++)
-    {
         for(int col=0;col<width;col++)
-        {
             delete block[row][col];
-        }
-    }
 }
 
 void GameController::initMap()   //初始化地图块
@@ -58,6 +55,7 @@ void GameController::initMap()   //初始化地图块
             block[row][col]->type = BlockType::NORMAL_TYPE;
             block[row][col]->x = row;
             block[row][col]->y = col;
+            block[row][col]->mrk = -1;  //表示蛇首尚未进过该位置
             //block[row][col]->block->setStyleSheet("QLabel{ background-color: black;}");
 //            block[row][col]->block->setGeometry(col*BLOCK_SIZE, row*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 //            label->setNum(row*width+col); //TO TEST  
@@ -75,7 +73,9 @@ void GameController::initSnake()
     snake->headX = qrand() % width;
     snake->headY = qrand() % height;
     snake->headDir = qrand() % 4;
+    snake->headMrk = getIdx(snake->headMrk);
     block[snake->headX][snake->headY]->type = BlockType::SNAKE_TYPE;
+    block[snake->headX][snake->headY]->mrk = snake->headMrk;    //标记初始蛇首位置的计数值为 0 .
     snake->snake.push_front(std::make_pair(snake->headX, snake->headY));
 //    if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
 //        block[snake->headX][snake->headY]->block->setStyleSheet("background-color: white; border: 5px solid black;");
@@ -139,19 +139,13 @@ void GameController::snakeMove(int x, int y)
         snake->snake.push_front(std::make_pair(x, y));
         snake->headX = x;
         snake->headY = y;
+        snake->headMrk = getIdx(snake->headMrk);
         block[x][y]->type = BlockType::SNAKE_TYPE;
-
-//        if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
-//            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 0 5px;");
-//        else
-//            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 10px 0;");
-
-//        block[x][y]->block->setStyleSheet("QLabel {background: white;}");
+        block[x][y]->mrk = snake->headMrk;
 
         //删除蛇尾 BLOCK
         std::pair<int, int> tail = snake->snake.back();
         snake->snake.pop_back();
-//        block[tail.first][tail.second]->block->setStyleSheet("background: black;");
         block[tail.first][tail.second]->type = BlockType::NORMAL_TYPE;
     }
     else if(block[x][y]->type == BlockType::FOOD_TYPE)
@@ -160,13 +154,10 @@ void GameController::snakeMove(int x, int y)
         snake->snake.push_front(std::make_pair(x, y));
         snake->headX = x;
         snake->headY = y;
-//        block[x][y]->block->setStyleSheet("QLabel {background: white;}");
-//        if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
-//            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 0 10px;");
-//        else
-//            block[snake->headX][snake->headY]->block->setStyleSheet("background: white; margin: 10px 0;");
-
+        snake->headMrk = getIdx(snake->headMrk);
         block[x][y]->type = BlockType::SNAKE_TYPE;
+        block[x][y]->mrk = snake->headMrk;
+
         snake->length++;
 
         //蛇尾不需进行操作
@@ -217,6 +208,11 @@ void GameController::showErrorMessage()
 
 void GameController::AI()
 {
+
+}
+
+void GameController::AI_normal()
+{
     if(snake->headY == 0)
     {
         snake->headDir = DIR::UP;
@@ -241,6 +237,27 @@ void GameController::AI()
     {
         snake->headDir = snake->headX % 2 ? DIR::LEFT : DIR::RIGHT;
     }
+}
+
+void GameController::AI_bfs()
+{
+    //判断蛇首四个方位 哪个离食物更近
+}
+
+//获得食物后是否能够有路径抵达蛇尾（防止进入死路）
+bool GameController::hasWayToTail(int headX, int headY, int tailX, int tailY)
+{
+
+}
+
+int GameController::getIdx(int oriIdx)
+{
+    return ++oriIdx == MAX_IDX ? 0 : oriIdx;
+}
+
+int GameController::subIdx(int oriIdx, int curIdx)
+{
+    return curIdx-=oriIdx >= 0 ? curIdx : curIdx + MAX_IDX;
 }
 
 void GameController::keyPressEvent(QKeyEvent *e)
