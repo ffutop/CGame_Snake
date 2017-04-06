@@ -131,6 +131,15 @@ QRectF GameController::genSnakeRect(std::pair<int, int> preCoordinate, std::pair
     }
 }
 
+bool GameController::isValidPos(int x, int y, bool isVir)
+{
+    if(x<0 || x>=height || y<0 || y>=width)
+        return false;
+    if(isVir && vis[x][y])
+        return false;
+    return true;
+}
+
 void GameController::snakeMove(int x, int y)
 {
     if(block[x][y]->type == BlockType::NORMAL_TYPE)
@@ -208,7 +217,26 @@ void GameController::showErrorMessage()
 
 void GameController::AI()
 {
-
+    int minDis = INF, curDis;
+    int Dir;
+    for(int i=0;i<4;i++)
+    {
+        if(i+snake->headDir == 1 || i+snake->headDir == 5)
+            continue;
+        curDis = AI_AStar(i);
+        if(curDis < minDis)
+            Dir = i,    minDis = curDis;
+    }
+    //当不存在 策略1 可达的路径时
+    if(minDis == INF)
+    {
+        for(int i=0;i<4;i++)
+        {
+            if(i+snake->headDir == 1 || i+snake->headDir == 5)
+                continue;
+        }
+    }
+    snake->headDir = Dir;
 }
 
 void GameController::AI_normal()
@@ -239,15 +267,51 @@ void GameController::AI_normal()
     }
 }
 
-void GameController::AI_bfs()
+//判断蛇首四个方位 哪个离食物更近
+int GameController::AI_AStar(int headDir)
 {
-    //判断蛇首四个方位 哪个离食物更近
+    VirSnake vCurPos, vNxtPos;
+    vCurPos.x = snake->headX + DirChg[headDir][0];
+    vCurPos.y = snake->headY + DirChg[headDir][1];
+    vCurPos.curStp = 1;
+    vCurPos.expStp = vCurPos.calEuclidDis(food->x, food->y);
+
+    memset(vis, 0, sizeof(vis));
+    for(auto coordinate : snake->snake)
+        vis[coordinate.first][coordinate.second] = 1;
+
+    if(!hasWayToTail(vCurPos.x, vCurPos.y))
+        return INF;
+
+    std::priority_queue<VirSnake> que;
+    que.push(vCurPos);
+    while(!que.empty())
+    {
+        vCurPos = que.top();
+        que.pop();
+        if(vis[vCurPos.x][vCurPos.y])   continue;
+        vis[vCurPos.x][vCurPos.y] = 1;
+
+        if(vCurPos.x == food->x && vCurPos.y == food->y)
+            return vCurPos.curStp;
+
+        vNxtPos.curStp = vCurPos.curStp + 1;
+        for(int i=0;i<4;i++)
+        {
+            vNxtPos.x = vCurPos.x + DirChg[i][0];
+            vNxtPos.y = vCurPos.y + DirChg[i][1];
+            if(!isValidPos(vNxtPos.x, vNxtPos.y, true))   continue;
+            vNxtPos.expStp = vNxtPos.calEuclidDis(food->x, food->y);
+            que.push(vNxtPos);
+        }
+    }
+    return INF;
 }
 
 //获得食物后是否能够有路径抵达蛇尾（防止进入死路）
-bool GameController::hasWayToTail(int headX, int headY, int tailX, int tailY)
+bool GameController::hasWayToTail(int headX, int headY)
 {
-
+    return true;
 }
 
 int GameController::getIdx(int oriIdx)
@@ -303,35 +367,20 @@ void GameController::timerEvent(QTimerEvent *e)
 {
     if(isStart && e->timerId() == moveTimer)   //定时器触发
     {
+        //调用贪吃蛇 AI() 函数决定蛇首是否转向
         AI();
-        switch (snake->headDir) {   //判断当前蛇首方向
-        case DIR::UP:
-            if(snake->headX == 0)
-                showErrorMessage();
-            else
-                snakeMove(snake->headX-1, snake->headY);
-            break;
-        case DIR::DOWN:
-            if(snake->headX == height-1)
-                showErrorMessage();
-            else
-                snakeMove(snake->headX+1, snake->headY);
-            break;
-        case DIR::LEFT:
-            if(snake->headY == 0)
-                showErrorMessage();
-            else
-                snakeMove(snake->headX, snake->headY-1);
-            break;
-        case DIR::RIGHT:
-            if(snake->headY == width-1)
-                showErrorMessage();
-            else
-                snakeMove(snake->headX, snake->headY+1);
-            break;
-        default:
-            break;
-        }
+
+        //根据蛇首位置及蛇首方向产生下一步蛇首位置
+        snake->headX = snake->headX + DirChg[snake->headDir][0];
+        snake->headY = snake->headY + DirChg[snake->headDir][1];
+
+        //蛇移动到下一个位置
+        if(!isValidPos(snake->headX, snake->headY, false))
+            showErrorMessage();
+        else
+            snakeMove(snake->headX, snake->headY);
+
+        //重绘 游戏界面
         repaint();
     }
 }
