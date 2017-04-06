@@ -5,11 +5,11 @@
 #include "block.h"
 #include "snake.h"
 
-const int INF = (1ll<<31) - 1;
+const int INF = (1ll<<30) - 1;
 const int MAX_WIDTH = 18;   //游戏界面最大宽度
 const int MAX_HEIGHT = 18;  //游戏界面最大高度
 const int BLOCK_SIZE = 35;  //每个标签块的大小（像素）
-const int INTERVALS = 50;  //timerEvent 触发的间隔时间
+const int INTERVALS = 30;  //timerEvent 触发的间隔时间
 const int MAX_IDX = 10000000;   //设置最大计数值(idx)，采用循环计数的方式
 const std::pair<int, int> ERROR_PAIR = std::make_pair(-1, -1);
 

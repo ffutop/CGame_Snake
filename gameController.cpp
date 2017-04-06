@@ -56,9 +56,6 @@ void GameController::initMap()   //初始化地图块
             block[row][col]->x = row;
             block[row][col]->y = col;
             block[row][col]->mrk = -1;  //表示蛇首尚未进过该位置
-            //block[row][col]->block->setStyleSheet("QLabel{ background-color: black;}");
-//            block[row][col]->block->setGeometry(col*BLOCK_SIZE, row*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-//            label->setNum(row*width+col); //TO TEST  
         }
     }
 }
@@ -77,10 +74,6 @@ void GameController::initSnake()
     block[snake->headX][snake->headY]->type = BlockType::SNAKE_TYPE;
     block[snake->headX][snake->headY]->mrk = snake->headMrk;    //标记初始蛇首位置的计数值为 0 .
     snake->snake.push_front(std::make_pair(snake->headX, snake->headY));
-//    if(snake->headDir == DIR::UP || snake->headDir == DIR::DOWN)
-//        block[snake->headX][snake->headY]->block->setStyleSheet("background-color: white; border: 5px solid black;");
-//    else
-//        block[snake->headX][snake->headY]->block->setStyleSheet("background-color: white; border: 10px solid black");
 }
 
 void GameController::randGenFood()
@@ -92,7 +85,6 @@ void GameController::randGenFood()
     } while(block[x][y]->type != BlockType::NORMAL_TYPE);
     block[x][y]->type = BlockType::FOOD_TYPE;
     food = block[x][y];
-    //    block[x][y]->block->setStyleSheet("background: red; border: 5px solid black;");
 }
 
 QRectF GameController::genSnakeRect(std::pair<int, int> preCoordinate, std::pair<int, int> coordinate)
@@ -142,22 +134,7 @@ bool GameController::isValidPos(int x, int y, bool isVir)
 
 void GameController::snakeMove(int x, int y)
 {
-    if(block[x][y]->type == BlockType::NORMAL_TYPE)
-    {
-        //蛇首位置更新一格
-        snake->snake.push_front(std::make_pair(x, y));
-        snake->headX = x;
-        snake->headY = y;
-        snake->headMrk = getIdx(snake->headMrk);
-        block[x][y]->type = BlockType::SNAKE_TYPE;
-        block[x][y]->mrk = snake->headMrk;
-
-        //删除蛇尾 BLOCK
-        std::pair<int, int> tail = snake->snake.back();
-        snake->snake.pop_back();
-        block[tail.first][tail.second]->type = BlockType::NORMAL_TYPE;
-    }
-    else if(block[x][y]->type == BlockType::FOOD_TYPE)
+    if(block[x][y]->type == BlockType::FOOD_TYPE)
     {
         //获得食物，食物块加入蛇身，作为新的蛇首
         snake->snake.push_front(std::make_pair(x, y));
@@ -174,10 +151,25 @@ void GameController::snakeMove(int x, int y)
         //生成新的食物
         randGenFood();
     }
-    else if(block[x][y]->type == BlockType::SNAKE_TYPE)
+    else
     {
-        //蛇首碰撞蛇身，游戏结束
-        showErrorMessage();
+        //删除蛇尾 BLOCK
+        std::pair<int, int> tail = snake->snake.back();
+        snake->snake.pop_back();
+        block[tail.first][tail.second]->type = BlockType::NORMAL_TYPE;
+
+        if(block[x][y]->type == BlockType::NORMAL_TYPE)
+        {
+            //蛇首位置更新一格
+            snake->snake.push_front(std::make_pair(x, y));
+            snake->headX = x;
+            snake->headY = y;
+            snake->headMrk = getIdx(snake->headMrk);
+            block[x][y]->type = BlockType::SNAKE_TYPE;
+            block[x][y]->mrk = snake->headMrk;
+        }
+        else
+            showErrorMessage(); //蛇首碰撞蛇身，游戏结束
     }
 }
 
@@ -217,7 +209,7 @@ void GameController::showErrorMessage()
 
 void GameController::AI()
 {
-    int minDis = INF, curDis;
+    int minDis = 2*INF, curDis;
     int Dir;
     for(int i=0;i<4;i++)
     {
@@ -226,17 +218,16 @@ void GameController::AI()
         curDis = AI_AStar(i);
         if(curDis < minDis)
             Dir = i,    minDis = curDis;
+        else if(curDis == minDis && rand()%5 == 0)
+            Dir = i;
     }
-    //当不存在 策略1 可达的路径时
-    if(minDis == INF)
+    if(minDis == 2*INF)
     {
-        for(int i=0;i<4;i++)
-        {
-            if(i+snake->headDir == 1 || i+snake->headDir == 5)
-                continue;
-        }
+        qDebug("SOMETHING ERROR!");
+        showErrorMessage();
     }
-    snake->headDir = Dir;
+    else
+        snake->headDir = Dir;
 }
 
 void GameController::AI_normal()
@@ -276,12 +267,12 @@ int GameController::AI_AStar(int headDir)
     vCurPos.curStp = 1;
     vCurPos.expStp = vCurPos.calEuclidDis(food->x, food->y);
 
+    if(!hasWayToTail(vCurPos.x, vCurPos.y))
+        return 2*INF;
+
     memset(vis, 0, sizeof(vis));
     for(auto coordinate : snake->snake)
         vis[coordinate.first][coordinate.second] = 1;
-
-    if(!hasWayToTail(vCurPos.x, vCurPos.y))
-        return INF;
 
     std::priority_queue<VirSnake> que;
     que.push(vCurPos);
@@ -311,7 +302,37 @@ int GameController::AI_AStar(int headDir)
 //获得食物后是否能够有路径抵达蛇尾（防止进入死路）
 bool GameController::hasWayToTail(int headX, int headY)
 {
-    return true;
+    memset(vis, 0, sizeof(vis));
+    VirSnake vCurPos, vNxtPos;
+    std::list< std::pair<int, int> >::iterator it = snake->snake.begin();
+    for(int i=1;i < snake->length && it!=snake->snake.end();it++,i++)
+        vis[it->first][it->second] = 1;
+    vCurPos.x = headX;
+    vCurPos.y = headY;
+    vCurPos.curStp = 0;
+    vCurPos.expStp = vCurPos.calEuclidDis(it->first, it->second);
+    std::priority_queue<VirSnake> que;
+    que.push(vCurPos);
+    while (!que.empty()) {
+        vCurPos = que.top();
+        que.pop();
+        if(vis[vCurPos.x][vCurPos.y])   continue;
+        vis[vCurPos.x][vCurPos.y] = 1;
+
+        if(vCurPos.x == it->first && vCurPos.y == it->second)
+            return true;
+
+        vNxtPos.curStp = vCurPos.curStp + 1;
+        for(int i=0;i<4;i++)
+        {
+            vNxtPos.x = vCurPos.x + DirChg[i][0];
+            vNxtPos.y = vCurPos.y + DirChg[i][1];
+            if(!isValidPos(vNxtPos.x, vNxtPos.y, true))   continue;
+            vNxtPos.expStp = vNxtPos.calEuclidDis(it->first, it->second);
+            que.push(vNxtPos);
+        }
+    }
+    return false;
 }
 
 int GameController::getIdx(int oriIdx)
