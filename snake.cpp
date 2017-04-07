@@ -3,12 +3,10 @@
 
 Snake::Snake()
 {
-    headMrk = -1;
 }
 
 Snake::~Snake()
 {
-
 }
 
 VirSnake::VirSnake()
@@ -39,7 +37,7 @@ VirSnake::~VirSnake()
 
 }
 
-int VirSnake::calEuclidDis(int foodX, int foodY)
+int VirSnake::calEuclidDis(int aimX, int aimY)
 {
-    return std::abs(x - foodX) + std::abs(y - foodY);
+    return std::abs(x - aimX) + std::abs(y - aimY);
 }
