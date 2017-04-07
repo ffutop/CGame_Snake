@@ -17,8 +17,10 @@ GameController::GameController(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    moveTimer = startTimer(INTERVALS);       //初始化计时器 1000 ms/次 触发定时器
+    //初始化计时器 INTERVALS ms/次 触发定时器
+    moveTimer = startTimer(INTERVALS);
 
+    // 重置 QTime 的随机数生成种子
     qsrand(QTime(0, 0, 0).secsTo(QTime::currentTime()));
 
     isStart = true;
@@ -29,8 +31,6 @@ GameController::GameController(QWidget *parent) :
     for(int row=0;row<height;row++)
         for(int col=0;col<width;col++)
             block[row][col] = new Block();
-    // new Snake() 对象
-    snake = new Snake();
 
     initMap();  //初始化地图
     initSnake();//初始化蛇身
@@ -43,6 +43,7 @@ GameController::~GameController() //释放堆内存中的对象
     for(int row=0;row<height;row++)
         for(int col=0;col<width;col++)
             delete block[row][col];
+    delete snake;
 }
 
 void GameController::initMap()   //初始化地图块
@@ -51,11 +52,9 @@ void GameController::initMap()   //初始化地图块
     {
         for(int col=0;col<width;col++)
         {
-            //重置 QLabel 的样式及位置
             block[row][col]->type = BlockType::NORMAL_TYPE;
             block[row][col]->x = row;
             block[row][col]->y = col;
-            block[row][col]->mrk = -1;  //表示蛇首尚未进过该位置
         }
     }
 }
@@ -64,15 +63,14 @@ void GameController::initSnake()
 {
     if(snake != nullptr)    //清除上一轮游戏中的对象（蛇），防止内存溢出
         delete snake;
+
     //随机产生长为 1 的蛇，蛇首坐标 (snakeHeadX, snakeHeadY), 蛇首朝向 snakeHeadDir 。
     snake = new Snake();
     snake->length = 1;
-    snake->headX = qrand() % width;
-    snake->headY = qrand() % height;
+    snake->headX = qrand() % height;
+    snake->headY = qrand() % width;
     snake->headDir = qrand() % 4;
-    snake->headMrk = getIdx(snake->headMrk);
     block[snake->headX][snake->headY]->type = BlockType::SNAKE_TYPE;
-    block[snake->headX][snake->headY]->mrk = snake->headMrk;    //标记初始蛇首位置的计数值为 0 .
     snake->snake.push_front(std::make_pair(snake->headX, snake->headY));
 }
 
@@ -80,8 +78,8 @@ void GameController::randGenFood()
 {
     int x, y;
     do {
-        x = qrand() % width;
-        y = qrand() % height;
+        x = qrand() % height;
+        y = qrand() % width;
     } while(block[x][y]->type != BlockType::NORMAL_TYPE);
     block[x][y]->type = BlockType::FOOD_TYPE;
     food = block[x][y];
@@ -121,15 +119,7 @@ QRectF GameController::genSnakeRect(std::pair<int, int> preCoordinate, std::pair
                           0.5*BLOCK_SIZE, BLOCK_SIZE);
         }
     }
-}
-
-bool GameController::isValidPos(int x, int y, bool isVir)
-{
-    if(x<0 || x>=height || y<0 || y>=width)
-        return false;
-    if(isVir && vis[x][y])
-        return false;
-    return true;
+    return QRectF(0, 0, 0, 0);
 }
 
 void GameController::snakeMove(int x, int y)
@@ -140,9 +130,7 @@ void GameController::snakeMove(int x, int y)
         snake->snake.push_front(std::make_pair(x, y));
         snake->headX = x;
         snake->headY = y;
-        snake->headMrk = getIdx(snake->headMrk);
         block[x][y]->type = BlockType::SNAKE_TYPE;
-        block[x][y]->mrk = snake->headMrk;
 
         snake->length++;
 
@@ -164,9 +152,7 @@ void GameController::snakeMove(int x, int y)
             snake->snake.push_front(std::make_pair(x, y));
             snake->headX = x;
             snake->headY = y;
-            snake->headMrk = getIdx(snake->headMrk);
             block[x][y]->type = BlockType::SNAKE_TYPE;
-            block[x][y]->mrk = snake->headMrk;
         }
         else
             showErrorMessage(); //蛇首碰撞蛇身，游戏结束
@@ -207,27 +193,52 @@ void GameController::showErrorMessage()
     QMessageBox::warning(this, tr("Warning"), tr("Game is Over. You lose!"), QMessageBox::Yes);
 }
 
+bool GameController::isValidPos(int x, int y, bool isVir)
+{
+    if(x<0 || x>=height || y<0 || y>=width)
+        return false;
+    if(isVir && vis[x][y])
+        return false;
+    return true;
+}
+
 void GameController::AI()
 {
     int minDis = 2*INF, curDis;
     int Dir;
     for(int i=0;i<4;i++)
     {
+        // UP <-> DOWN OR LEFT <-> RIGHT
         if(i+snake->headDir == 1 || i+snake->headDir == 5)
             continue;
         curDis = AI_AStar(i);
         if(curDis < minDis)
             Dir = i,    minDis = curDis;
-        else if(curDis == minDis && rand()%5 == 0)
+        else if(curDis == minDis && rand()%20 == 0)
             Dir = i;
     }
     if(minDis == 2*INF)
     {
-        qDebug("SOMETHING ERROR!");
-        showErrorMessage();
+        qDebug("Can't found a true path!");
+        //showErrorMessage();
     }
     else
-        snake->headDir = Dir;
+        switch (Dir) {
+        case DIR::UP:
+            turnUp();
+            break;
+        case DIR::DOWN:
+            turnDown();
+            break;
+        case DIR::LEFT:
+            turnLeft();
+            break;
+        case DIR::RIGHT:
+            turnRight();
+            break;
+        default:
+            break;
+        }
 }
 
 void GameController::AI_normal()
@@ -262,6 +273,7 @@ void GameController::AI_normal()
 int GameController::AI_AStar(int headDir)
 {
     VirSnake vCurPos, vNxtPos;
+    // 产生虚拟蛇首
     vCurPos.x = snake->headX + DirChg[headDir][0];
     vCurPos.y = snake->headY + DirChg[headDir][1];
     vCurPos.curStp = 1;
@@ -270,9 +282,14 @@ int GameController::AI_AStar(int headDir)
     if(!hasWayToTail(vCurPos.x, vCurPos.y))
         return 2*INF;
 
+    if(vCurPos.expStp == 0) return vCurPos.curStp;
+
     memset(vis, 0, sizeof(vis));
-    for(auto coordinate : snake->snake)
-        vis[coordinate.first][coordinate.second] = 1;
+    std::list< std::pair<int, int> >::iterator it = snake->snake.begin();
+    for(int i=0;i<snake->length-2 && it!=snake->snake.end();i++, it++)
+        vis[it->first][it->second] = 1;
+    vis[it->first][it->second] = 1;
+    std::pair<int, int> virTail = *it;
 
     std::priority_queue<VirSnake> que;
     que.push(vCurPos);
@@ -296,30 +313,44 @@ int GameController::AI_AStar(int headDir)
             que.push(vNxtPos);
         }
     }
-    return INF;
+
+    vCurPos.x = snake->headX + DirChg[headDir][0];
+    vCurPos.y = snake->headY + DirChg[headDir][1];
+    vCurPos.curStp = 1;
+    vCurPos.expStp = vCurPos.calEuclidDis(virTail.first, virTail.second);
+    return 2*INF - vCurPos.expStp;
 }
 
-//获得食物后是否能够有路径抵达蛇尾（防止进入死路）
+//判断虚拟蛇首 (headX, headY) 是否能够有路径抵达蛇尾（防止进入死路）
 bool GameController::hasWayToTail(int headX, int headY)
 {
+    if(snake->length <= 2)  return true;
     memset(vis, 0, sizeof(vis));
-    VirSnake vCurPos, vNxtPos;
+
+    // 标记蛇身为 非法 块
     std::list< std::pair<int, int> >::iterator it = snake->snake.begin();
-    for(int i=1;i < snake->length && it!=snake->snake.end();it++,i++)
+    for(int i=0;i < snake->length-2 && it!=snake->snake.end();it++,i++)
         vis[it->first][it->second] = 1;
+    // 获取 虚拟 蛇尾
+    std::pair<int, int> tail = *it;
+
+    VirSnake vCurPos, vNxtPos;
     vCurPos.x = headX;
     vCurPos.y = headY;
     vCurPos.curStp = 0;
-    vCurPos.expStp = vCurPos.calEuclidDis(it->first, it->second);
+    vCurPos.expStp = vCurPos.calEuclidDis(tail.first, tail.second);
+
+    // 判断该虚拟蛇首位置是否合法
+    if(!isValidPos(vCurPos.x, vCurPos.y, true)) return false;
+
+    vis[vCurPos.x][vCurPos.y] = 1;
+
     std::priority_queue<VirSnake> que;
     que.push(vCurPos);
     while (!que.empty()) {
         vCurPos = que.top();
         que.pop();
-        if(vis[vCurPos.x][vCurPos.y])   continue;
-        vis[vCurPos.x][vCurPos.y] = 1;
-
-        if(vCurPos.x == it->first && vCurPos.y == it->second)
+        if(vCurPos.x == tail.first && vCurPos.y == tail.second)
             return true;
 
         vNxtPos.curStp = vCurPos.curStp + 1;
@@ -328,21 +359,12 @@ bool GameController::hasWayToTail(int headX, int headY)
             vNxtPos.x = vCurPos.x + DirChg[i][0];
             vNxtPos.y = vCurPos.y + DirChg[i][1];
             if(!isValidPos(vNxtPos.x, vNxtPos.y, true))   continue;
-            vNxtPos.expStp = vNxtPos.calEuclidDis(it->first, it->second);
+            vNxtPos.expStp = vNxtPos.calEuclidDis(tail.first, tail.second);
+            vis[vNxtPos.x][vNxtPos.y] = 1;
             que.push(vNxtPos);
         }
     }
     return false;
-}
-
-int GameController::getIdx(int oriIdx)
-{
-    return ++oriIdx == MAX_IDX ? 0 : oriIdx;
-}
-
-int GameController::subIdx(int oriIdx, int curIdx)
-{
-    return curIdx-=oriIdx >= 0 ? curIdx : curIdx + MAX_IDX;
 }
 
 void GameController::keyPressEvent(QKeyEvent *e)
@@ -406,8 +428,8 @@ void GameController::timerEvent(QTimerEvent *e)
     }
 }
 
-void GameController::mousePressEvent(QMouseEvent *)
-{
+//void GameController::mousePressEvent(QMouseEvent *)
+//{
 //    //响应鼠标点击事件
 //    if(isStart == false)    //如果游戏尚未开始
 //    {
@@ -415,8 +437,8 @@ void GameController::mousePressEvent(QMouseEvent *)
 //        initMap();      //重置地图
 //        initSnake();    //重置蛇
 //        randGenFood();  //重置食物
-    //    }
-}
+//        }
+//}
 
 void GameController::paintEvent(QPaintEvent *)
 {
@@ -443,40 +465,40 @@ void GameController::paintEvent(QPaintEvent *)
     }
 }
 
-void GameController::on_actionNew_Game_N_triggered()    //新的游戏
-{
-    isStart = false;
-    initMap();  //初始化地图
-    initSnake();//初始化蛇身
-    randGenFood();//随机生成食物
-    ui->actionStart_S->setCheckable(true);
-}
+//void GameController::on_actionNew_Game_N_triggered()    //新的游戏
+//{
+//    isStart = false;
+//    initMap();  //初始化地图
+//    initSnake();//初始化蛇身
+//    randGenFood();//随机生成食物
+//    ui->actionStart_S->setCheckable(true);
+//}
 
-void GameController::on_actionStart_S_triggered()
-{
-    //TODO: 设置 Action 不可点击（禁制显示）
-    ui->actionStart_S->setCheckable(false);
-    isStart = true;
-}
+//void GameController::on_actionStart_S_triggered()
+//{
+//    //TODO: 设置 Action 不可点击（禁制显示）
+//    ui->actionStart_S->setCheckable(false);
+//    isStart = true;
+//}
 
-void GameController::on_actionExit_Q_triggered()
-{
-    exit(true);
-}
+//void GameController::on_actionExit_Q_triggered()
+//{
+//    exit(true);
+//}
 
-void GameController::on_actionPause_Continue_triggered()
-{
-    //TODO: 添加实际 暂停/继续 操作逻辑
-    QIcon pause(":/icon/assets/Pause_104px.png");
-    QIcon contin(":/icon/assets/Resume_Button_96px.png");
-    if(ui->actionPause_Continue->text() == tr("Pause(&P)"))
-    {
-        ui->actionPause_Continue->setIcon(contin);
-        ui->actionPause_Continue->setText(tr("Continue(&C)"));
-    }
-    else
-    {
-        ui->actionPause_Continue->setIcon(pause);
-        ui->actionPause_Continue->setText(tr("Pause(&P)"));
-    }
-}
+//void GameController::on_actionPause_Continue_triggered()
+//{
+//    //TODO: 添加实际 暂停/继续 操作逻辑
+//    QIcon pause(":/icon/assets/Pause_104px.png");
+//    QIcon contin(":/icon/assets/Resume_Button_96px.png");
+//    if(ui->actionPause_Continue->text() == tr("Pause(&P)"))
+//    {
+//        ui->actionPause_Continue->setIcon(contin);
+//        ui->actionPause_Continue->setText(tr("Continue(&C)"));
+//    }
+//    else
+//    {
+//        ui->actionPause_Continue->setIcon(pause);
+//        ui->actionPause_Continue->setText(tr("Pause(&P)"));
+//    }
+//}
