@@ -220,7 +220,7 @@ void GameController::AI()
     if(minDis == 2*INF)
     {
         qDebug("Can't found a true path!");
-        showErrorMessage();
+        //showErrorMessage();
     }
     else
         switch (Dir) {
@@ -285,10 +285,11 @@ int GameController::AI_AStar(int headDir)
     if(vCurPos.expStp == 0) return vCurPos.curStp;
 
     memset(vis, 0, sizeof(vis));
-    for(auto coordinate : snake->snake)
-        vis[coordinate.first][coordinate.second] = 1;
-    std::pair<int, int> tail = snake->snake.back();
-    vis[tail.first][tail.second] = 0;
+    std::list< std::pair<int, int> >::iterator it = snake->snake.begin();
+    for(int i=0;i<snake->length-2 && it!=snake->snake.end();i++, it++)
+        vis[it->first][it->second] = 1;
+    vis[it->first][it->second] = 1;
+    std::pair<int, int> virTail = *it;
 
     std::priority_queue<VirSnake> que;
     que.push(vCurPos);
@@ -316,7 +317,7 @@ int GameController::AI_AStar(int headDir)
     vCurPos.x = snake->headX + DirChg[headDir][0];
     vCurPos.y = snake->headY + DirChg[headDir][1];
     vCurPos.curStp = 1;
-    vCurPos.expStp = vCurPos.calEuclidDis(tail.first, tail.second);
+    vCurPos.expStp = vCurPos.calEuclidDis(virTail.first, virTail.second);
     return 2*INF - vCurPos.expStp;
 }
 
@@ -328,7 +329,7 @@ bool GameController::hasWayToTail(int headX, int headY)
 
     // 标记蛇身为 非法 块
     std::list< std::pair<int, int> >::iterator it = snake->snake.begin();
-    for(int i=1;i < snake->length && it!=snake->snake.end();it++,i++)
+    for(int i=0;i < snake->length-2 && it!=snake->snake.end();it++,i++)
         vis[it->first][it->second] = 1;
     // 获取 虚拟 蛇尾
     std::pair<int, int> tail = *it;
